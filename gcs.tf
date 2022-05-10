@@ -1,6 +1,22 @@
+# make sure the bucket is created by the same SA that verified DNS
+provider "google" {
+  alias = "bucketcreator"
+  credentials = base64decode(google_service_account_key.siteverifier.private_key)
+}
+
+# allow site verifier to create buckets
+resource "google_project_iam_member" "siteverifier_bucketCreator" {
+  project       = module.service_project.project_id
+  member        = format("serviceAccount:%s", google_service_account.siteverifier.email)
+  role          = "roles/storage.admin"
+}
+
 resource "google_storage_bucket" "private-data" {
-  depends_on = [
+  provider    = google.bucketcreator
+
+  depends_on  = [
     googlesiteverification_dns.domain,
+    google_project_iam_member.siteverifier_bucketCreator,
   ]
 
   project       = module.service_project.project_id
@@ -12,37 +28,13 @@ resource "google_storage_bucket" "private-data" {
   uniform_bucket_level_access = true
 }
 
-data "googlesiteverification_dns_token" "domain" {
-  depends_on = [
-    module.service_project.enabled_apis
-  ]
+resource "google_storage_bucket" "private-data2" {
+  project       = module.service_project.project_id
+  name          = format("%s-%s", var.service_project_id, random_id.id.hex)
+  location      = "US"
+  force_destroy = true
 
-  domain     = var.bucket_domain
-}
-
-data "google_dns_managed_zone" "parent_domain" {
-  provider  = google-beta
-  project   = var.shared_vpc_host_project_id
-  name      = var.zone_name
-}
-
-resource "google_dns_record_set" "bucket_dns" {
-
-  project       = var.shared_vpc_host_project_id
-  provider      = google-beta
-  managed_zone  = data.google_dns_managed_zone.parent_domain.name
-  type          = data.googlesiteverification_dns_token.domain.record_type
-  rrdatas       = [data.googlesiteverification_dns_token.domain.record_value]
-  name          = format("%s.", data.googlesiteverification_dns_token.domain.record_name)
-  ttl           = 60
-}
-
-resource "googlesiteverification_dns" "domain" {
-  domain     = var.bucket_domain
-  token      = data.googlesiteverification_dns_token.domain.record_value
-  depends_on = [
-    google_dns_record_set.bucket_dns,
-  ]
+  uniform_bucket_level_access = true
 }
 
 resource "google_storage_bucket_object" "hmac_test" {
@@ -51,6 +43,14 @@ resource "google_storage_bucket_object" "hmac_test" {
 test hmac data! ${google_storage_bucket.private-data.name} ${random_id.id.hex}
 EOT
   bucket = google_storage_bucket.private-data.name
+}
+
+resource "google_storage_bucket_object" "hmac_test2" {
+  name   = "hmac-test.txt"
+  content = <<EOT
+test hmac data! ${google_storage_bucket.private-data2.name} ${random_id.id.hex}
+EOT
+  bucket = google_storage_bucket.private-data2.name
 }
 
 resource "random_id" "id" {
@@ -75,6 +75,12 @@ resource "google_storage_hmac_key" "key" {
 
 resource "google_storage_bucket_iam_member" "gcs_reader" {
   bucket = google_storage_bucket.private-data.name
+  role = "roles/storage.objectViewer"
+  member = format("serviceAccount:%s", google_service_account.gcs_reader.email)
+}
+
+resource "google_storage_bucket_iam_member" "gcs_reader2" {
+  bucket = google_storage_bucket.private-data2.name
   role = "roles/storage.objectViewer"
   member = format("serviceAccount:%s", google_service_account.gcs_reader.email)
 }

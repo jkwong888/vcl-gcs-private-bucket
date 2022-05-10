@@ -7,6 +7,7 @@ terraform {
   required_providers {
     google = {
       version = "~> 4.1.0"
+      configuration_aliases = [google.bucketcreator]
     }
     google-beta = {
       version = "~> 4.1.0"
@@ -39,6 +40,4 @@ provider "null" {
 provider "random" {
 }
 
-provider "googlesiteverification" {
-  # Configuration options
-}
+

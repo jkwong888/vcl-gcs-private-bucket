@@ -22,8 +22,9 @@ set var.googleRegion = "${GOOGLE_REGION}";
 
 set bereq.http.x-amz-content-sha256 = digest.hash_sha256("");
 set bereq.http.x-amz-date = strftime({"%Y%m%dT%H%M%SZ"}, now);
-set bereq.http.host = var.googleBucket ".storage.googleapis.com";
+set bereq.http.host = "storage.googleapis.com";
 set bereq.url = querystring.remove(bereq.url);
+set bereq.url = "/" urlencode(var.googleBucket) bereq.url.path;
 set bereq.url = regsuball(urlencode(urldecode(bereq.url.path)), {"%2F"}, "/");
 set var.dateStamp = strftime({"%Y%m%d"}, now);
 set var.canonicalHeaders = ""
