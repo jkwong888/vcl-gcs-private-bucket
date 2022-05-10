@@ -1,4 +1,8 @@
 resource "google_storage_bucket" "private-data" {
+  depends_on = [
+    googlesiteverification_dns.domain,
+  ]
+
   project       = module.service_project.project_id
   #name          = format("%s-%s", var.service_project_id, random_id.id.hex)
   name          = var.bucket_domain
@@ -23,9 +27,6 @@ data "google_dns_managed_zone" "parent_domain" {
 }
 
 resource "google_dns_record_set" "bucket_dns" {
-  depends_on = [
-    googlesiteverification_dns.domain,
-  ]
 
   project       = var.shared_vpc_host_project_id
   provider      = google-beta
