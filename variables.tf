@@ -14,8 +14,6 @@ variable "service_project_id" {
   description = "The ID of the service project which hosts the project resources e.g. dev-55427"
 }
 
-variable "registry_project_id" {
-}
 
 variable "shared_vpc_host_project_id" {
   description = "The ID of the host project which hosts the shared VPC e.g. shared-vpc-host-project-55427"
@@ -23,6 +21,7 @@ variable "shared_vpc_host_project_id" {
 
 variable "shared_vpc_network" {
   description = "The ID of the shared VPC e.g. shared-network"
+  default = ""
 }
 
 variable "service_project_apis_to_enable" {
@@ -46,3 +45,10 @@ variable "subnets" {
   default = []
 }
 
+
+variable "bucket_domain" {
+}
+
+variable "zone_name" {
+
+}

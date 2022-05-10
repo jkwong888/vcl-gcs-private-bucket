@@ -18,6 +18,10 @@ terraform {
     random = {
       version = "~> 2.2"
     }
+    googlesiteverification = {
+      source = "hectorj/googlesiteverification"
+      version = "0.4.3"
+    }
   }
 }
 
@@ -33,4 +37,8 @@ provider "null" {
 }
 
 provider "random" {
+}
+
+provider "googlesiteverification" {
+  # Configuration options
 }

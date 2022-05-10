@@ -1,10 +1,47 @@
 resource "google_storage_bucket" "private-data" {
   project       = module.service_project.project_id
-  name          = format("%s-%s", var.service_project_id, random_id.id.hex)
+  #name          = format("%s-%s", var.service_project_id, random_id.id.hex)
+  name          = var.bucket_domain
   location      = "US"
   force_destroy = true
 
   uniform_bucket_level_access = true
+}
+
+data "googlesiteverification_dns_token" "domain" {
+  depends_on = [
+    module.service_project.enabled_apis
+  ]
+
+  domain     = var.bucket_domain
+}
+
+data "google_dns_managed_zone" "parent_domain" {
+  provider  = google-beta
+  project   = var.shared_vpc_host_project_id
+  name      = var.zone_name
+}
+
+resource "google_dns_record_set" "bucket_dns" {
+  depends_on = [
+    googlesiteverification_dns.domain,
+  ]
+
+  project       = var.shared_vpc_host_project_id
+  provider      = google-beta
+  managed_zone  = data.google_dns_managed_zone.parent_domain.name
+  type          = data.googlesiteverification_dns_token.domain.record_type
+  rrdatas       = [data.googlesiteverification_dns_token.domain.record_value]
+  name          = format("%s.", data.googlesiteverification_dns_token.domain.record_name)
+  ttl           = 60
+}
+
+resource "googlesiteverification_dns" "domain" {
+  domain     = var.bucket_domain
+  token      = data.googlesiteverification_dns_token.domain.record_value
+  depends_on = [
+    google_dns_record_set.bucket_dns,
+  ]
 }
 
 resource "google_storage_bucket_object" "hmac_test" {
