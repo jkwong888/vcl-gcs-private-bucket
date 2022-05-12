@@ -38,7 +38,4 @@ resource "google_dns_record_set" "bucket_dns_txt" {
 resource "googlesiteverification_dns" "domain" {
   domain     = var.bucket_domain
   token      = data.googlesiteverification_dns_token.domain.record_value
-  depends_on = [
-    google_dns_record_set.bucket_dns_txt,
-  ]
 }
